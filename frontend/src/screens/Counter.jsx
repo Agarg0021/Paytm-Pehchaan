@@ -1,6 +1,6 @@
 import Soundbox from "../components/Soundbox.jsx";
 
-export default function Counter({ merchant, event, onAdvance }) {
+export default function Counter({ merchant, event, onAdvance, beat }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 pb-16 pt-10">
       <header className="mb-10 flex items-end justify-between">
@@ -23,14 +23,15 @@ export default function Counter({ merchant, event, onAdvance }) {
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center">
-        <Soundbox event={event} onAdvance={onAdvance} />
+        <Soundbox event={event} onAdvance={onAdvance} beat={beat} />
         <div
           className="wood -mt-1 h-[14px] w-[420px] rounded-[2px] sm:w-[460px]"
           style={{ boxShadow: "0 10px 24px rgba(40,28,12,0.28)" }}
         />
         <div className="h-[7px] w-[560px] max-w-[92vw] rounded-b-sm bg-[#5c3a22]/70" />
-        <p className="mt-8 text-center text-[12px] text-ink/40">
-          Click the device or press space — a payment lands, the amount is spoken, the cue is not.
+        <p className="mt-8 max-w-md text-center text-[12px] text-ink/40">
+          Space lands a payment. The speaker says the amount. The customer face shows only rupees.
+          The cue stays on this side.
         </p>
       </div>
     </div>

@@ -34,6 +34,11 @@ First backend start generates a seeded 90-day stream into DuckDB (~40s). After t
 | 1 | Counter |
 | 2 | Scoreboard |
 | 3 | Pruning |
+| 4 | Privacy (`#privacy`) |
+| 5 | Close (`#close`) |
+| p | Run the 3-minute pitch (Escape to stop) |
+| n | Toggle presenter notes |
+| a | Autoplay the 5-beat reel (backup) |
 | r | Reset the live reel |
 
 Pitch order on the counter: ordinary (no cue) → पहली बार → लौट आए → रुक गए.

@@ -66,6 +66,10 @@ export default function Scoreboard() {
             <Stat k="extra regulars / month" v={`+${data.extra_regulars}`} />
             <Stat k="new monthly revenue" v={rupees(data.rupee_value)} big />
           </div>
+          <p className="mt-6 max-w-lg text-[12px] leading-relaxed text-ink/45">
+            A holdout, not a dashboard. Same cue, two groups: he greeted them, or he didn't.
+            The AI reports the gap back to him — whether the coaching worked.
+          </p>
         </div>
 
         <aside className="rounded-2xl bg-white/50 p-5 ring-1 ring-ink/10">

@@ -141,6 +141,11 @@ def init_schema() -> None:
             v TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS optouts (
+            hash TEXT PRIMARY KEY,
+            ts TIMESTAMP
+        );
+
         CREATE SEQUENCE IF NOT EXISTS seq_payment START 1;
         CREATE SEQUENCE IF NOT EXISTS seq_cue START 1;
         CREATE SEQUENCE IF NOT EXISTS seq_action START 1;

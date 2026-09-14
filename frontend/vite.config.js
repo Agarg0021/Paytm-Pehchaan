@@ -16,6 +16,7 @@ export default defineConfig({
       "/act": "http://127.0.0.1:8000",
       "/scoreboard": "http://127.0.0.1:8000",
       "/budget": "http://127.0.0.1:8000",
+      "/optouts": "http://127.0.0.1:8000",
     },
   },
 });

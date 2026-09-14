@@ -129,21 +129,23 @@ def process_payment(
     spend, pctl = spend_percentile(payer_hash)
     cad = cadence_from_prior(prior, ts, spend, pctl)
 
+    opted = fetchone("SELECT 1 FROM optouts WHERE hash = ?", [payer_hash]) is not None
     model = load_model()
     prop = None
-    if cad.n_prior == 0:
-        prop = model.predict_proba(amount, ts.hour, ts.weekday(), 1 if ts.weekday() >= 5 else 0)
-
-    cue = decide_cue(cad, prop, model.threshold)
-    if cue is None and forced_type:
-        meta_why = {
-            "PEHLI_BAAR": ("इस दुकान पर पहले कोई भुगतान नहीं", "no payment from this person before"),
-            "LAUT_AAYE": ("बहुत दिनों बाद लौटे — इनके अपने रिदम से देर", "back after a long gap by their own rhythm"),
-            "RUK_GAYE": ("रिदम टूट गया था", "their own visit rhythm had broken"),
-            "KHAAS_GRAHAK": ("पिछले 90 दिन में सबसे ज़्यादा ख़र्च करने वाले 10% में", "top 10% by spend at this shop in 90 days"),
-        }
-        why = meta_why[forced_type]
-        cue = Cue(forced_type, why[0], why[1], prop)
+    cue = None
+    if not opted:
+        if cad.n_prior == 0:
+            prop = model.predict_proba(amount, ts.hour, ts.weekday(), 1 if ts.weekday() >= 5 else 0)
+        cue = decide_cue(cad, prop, model.threshold)
+        if cue is None and forced_type:
+            meta_why = {
+                "PEHLI_BAAR": ("इस दुकान पर पहले कोई भुगतान नहीं", "no payment from this person before"),
+                "LAUT_AAYE": ("बहुत दिनों बाद लौटे — इनके अपने रिदम से देर", "back after a long gap by their own rhythm"),
+                "RUK_GAYE": ("रिदम टूट गया था", "their own visit rhythm had broken"),
+                "KHAAS_GRAHAK": ("पिछले 90 दिन में सबसे ज़्यादा ख़र्च करने वाले 10% में", "top 10% by spend at this shop in 90 days"),
+            }
+            why = meta_why[forced_type]
+            cue = Cue(forced_type, why[0], why[1], prop)
     bandit = load_bandit()
     daily_cap = int(setting("daily_cap", "4") or 4)
     shown = shown_on(ts)
@@ -179,10 +181,19 @@ def process_payment(
 
     event = {
         "payment_id": pay_id,
-        "payer_hash": payer_hash,
+        "token_tail": payer_hash[-4:],
         "amount": int(amount),
         "ts": ts.isoformat(),
         "announcement": announcement(int(amount)),
+        "opted_out": opted,
+        "cadence": {
+            "n_prior": cad.n_prior,
+            "gap_days": None if cad.n_prior == 0 else round(cad.gap_days, 1),
+            "mean": None if cad.mean is None else round(cad.mean, 1),
+            "std": None if cad.std is None else round(cad.std, 1),
+            "bar": None if cad.mean is None or cad.std is None else round(cad.mean + 2 * cad.std, 1),
+        },
+        "threshold": None if cad.n_prior != 0 else round(float(model.threshold), 3),
         "cue": None
         if kept is None
         else {
@@ -209,10 +220,23 @@ async def broadcast(event: dict) -> None:
         subscribers.remove(q)
 
 
+def seed_optouts() -> None:
+    n = fetchone("SELECT COUNT(*) FROM optouts")
+    if n and n[0] > 0:
+        return
+    rows = fetchall(
+        "SELECT hash FROM payers WHERE persona IS NULL ORDER BY hash LIMIT 3"
+    )
+    now = datetime.now()
+    for (h,) in rows:
+        run("INSERT INTO optouts VALUES (?, ?)", [h, now])
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_schema()
     generate(force=False)
+    seed_optouts()
     yield
 
 
@@ -249,6 +273,16 @@ def merchant():
 @app.get("/model")
 def model_view():
     return load_model().as_dict()
+
+
+@app.get("/optouts")
+def optouts():
+    rows = fetchall("SELECT hash FROM optouts")
+    return {
+        "n": len(rows),
+        "tails": [h[-4:] for (h,) in rows],
+        "note": "Opted-out tokens never generate a cue. The merchant still never sees who they are.",
+    }
 
 
 @app.get("/stream")

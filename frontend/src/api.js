@@ -21,6 +21,11 @@ export async function getModel() {
   return r.json();
 }
 
+export async function getOptouts() {
+  const r = await fetch(`${API}/optouts`);
+  return r.json();
+}
+
 export async function nextPayment() {
   const r = await fetch(`${API}/demo/next`, { method: "POST" });
   if (!r.ok) throw new Error("demo next failed");
@@ -55,4 +60,14 @@ export function speakAmount(text) {
   } catch {
     /* voice is optional */
   }
+}
+
+export function announcePayment(event) {
+  if (!event) return;
+  const src = `/audio/${event.amount}.mp3`;
+  const audio = new Audio(src);
+  const fallback = () => speakAmount(event.announcement);
+  audio.addEventListener("error", fallback, { once: true });
+  const play = audio.play();
+  if (play && typeof play.catch === "function") play.catch(fallback);
 }
